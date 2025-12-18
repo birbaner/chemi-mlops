@@ -1,5 +1,10 @@
+import sys
 from pathlib import Path
 import pandas as pd
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from src.clean.standardize import canonicalize_smiles, smiles_to_inchikey
 from src.clean.add_descriptors import add_descriptors_to_csv
 

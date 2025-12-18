@@ -1,6 +1,11 @@
+import sys
+from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 import pandas as pd
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
 def compute_descriptors(smiles: str) -> dict:
