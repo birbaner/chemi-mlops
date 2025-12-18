@@ -1,35 +1,18 @@
-title: Chemi Mlops Demo
-emoji: 🚀
-colorFrom: red
-colorTo: red
-sdk: docker
-app_port: 8501
-tags:
-pinned: false
-short_description: Streamlit template space
-
-title: Chemi Mlops Demo
-emoji: 🚀
-colorFrom: red
-colorTo: red
-sdk: docker
-app_port: 8501
-tags:
-pinned: false
-short_description: Streamlit template space
-
-# Chemi Mlops Demo
-
 ---
 title: Chemi Mlops Demo
-emoji: 🚀
+emoji: 🧪
 colorFrom: red
-colorTo: red
+colorTo: blue
 sdk: docker
 app_port: 8501
-tags: ["streamlit"]
+app_file: app.py
+tags:
+  - streamlit
+  - cheminformatics
+  - drug-discovery
+  - rdkit
 pinned: false
-short_description: Streamlit template space
+short_description: Lipophilicity prediction + molecular similarity search
 ---
 
 # Chemi Mlops Demo
