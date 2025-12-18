@@ -1,6 +1,5 @@
 from pathlib import Path
 import pandas as pd
-from tdc.single_pred import ADME
 
 
 def load_and_save_adme_dataset(name: str, out_dir: str = "data/raw") -> Path:
@@ -13,6 +12,9 @@ def load_and_save_adme_dataset(name: str, out_dir: str = "data/raw") -> Path:
     """
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
+
+    # Lazy import to avoid import-time failures in deployment environments
+    from tdc.single_pred import ADME
 
     data = ADME(name=name)
     df = data.get_data()
