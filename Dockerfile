@@ -14,4 +14,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 EXPOSE 7860
 
-CMD ["sh", "-c", "PORT=${PORT:-7860}; streamlit run app.py --server.address=127.0.0.1 --server.port=$PORT --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false & sleep 5 && echo 'READY' && wait"]
+# Bind to 0.0.0.0 so the HF frontend can reach Streamlit. Use PORT env var (fallback 8501).
+CMD ["sh", "-c", "PORT=${PORT:-8501}; exec streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"]
