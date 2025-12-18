@@ -14,4 +14,4 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 EXPOSE 7860
 
-CMD ["sh", "-c", "PORT=${PORT:-7860}; streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"]
+CMD ["sh", "-c", "PORT=${PORT:-7860}; streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false & sleep 5 && echo 'READY' && wait"]
