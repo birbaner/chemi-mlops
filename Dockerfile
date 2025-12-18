@@ -17,4 +17,4 @@ EXPOSE 7860
 # Temporarily remove HEALTHCHECK to avoid premature container restarts
 # HEALTHCHECK CMD curl --fail http://localhost:${PORT:-7860}/_stcore/health || exit 1
 
-CMD ["sh", "-c", "streamlit run app.py --server.address=0.0.0.0 --server.port=${PORT:-7860} --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"]
+CMD ["sh", "-c", "streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"]

@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+import sys
+print("APP: starting", flush=True)
+
 from rdkit import Chem, DataStructs
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from sklearn.ensemble import RandomForestRegressor
