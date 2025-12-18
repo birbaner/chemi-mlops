@@ -103,7 +103,7 @@ class ModelInterpreter:
             matplotlib Figure
         """
         shap_values = self.explainer.shap_values(X)
-        base_value = self.explainer.expected_value
+        base_value = float(self.explainer.expected_value)
         
         # Create waterfall plot
         fig, ax = plt.subplots(figsize=(10, 6))
