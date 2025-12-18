@@ -75,8 +75,10 @@ st.set_page_config(page_title="ChemiMLOps Demo", layout="centered")
 st.title("🧪 ChemiMLOps — ADMET + Similarity Search")
 st.caption("Lipophilicity prediction + top-K similarity search (RDKit + ML).")
 
-df, fps = load_data_and_index()
-model, rmse, mae, r2 = train_model(df)
+# Load data and train model with spinners to avoid blocking import
+with st.spinner("Loading data and training model (this may take a minute)..."):
+    df, fps = load_data_and_index()
+    model, rmse, mae, r2 = train_model(df)
 
 with st.expander("Model metrics (baseline)", expanded=False):
     st.write(f"RMSE: **{rmse:.4f}** | MAE: **{mae:.4f}** | R²: **{r2:.4f}**")
