@@ -55,12 +55,13 @@ models/
 *.pth
 checkpoints/
 
-# Data files (protect sensitive/large data)
+# Data files
+# Keep raw data out (can be re-downloaded via TDC)
 data/raw/
-data/processed/*.csv
-data/processed/*.parquet
-data/processed/*.json
-!data/processed/.gitkeep
+
+# Keep processed data IN repo for demo purposes
+# If data becomes too large (>50MB), add specific files here
+# data/processed/large_file.csv
 
 # Environment & secrets
 .env
