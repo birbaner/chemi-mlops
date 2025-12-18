@@ -1,62 +1,264 @@
 # DEPLOYMENT_NOTES.md
 
-## Chemi Mlops Demo: End-to-End Deployment, Debugging, and Fixes
+## ChemiMLOps Demo: End-to-End Deployment, Debugging, and Fixes
 
-This document summarizes the process, root causes, and solutions for deploying the Chemi Mlops Demo (lipophilicity prediction + top-K similarity search) as a Docker-based Hugging Face Space. It is based on the detailed notes in the README and is intended as a standalone deployment reference.
+This document summarizes the complete deployment process, root causes, and solutions for deploying the ChemiMLOps Demo as a Docker-based Hugging Face Space.
 
 ---
 
+## 📦 Project Overview
+
+**Live Demo**: `https://huggingface.co/spaces/rb757/chemi-mlops-demo`  
+**GitHub**: `https://github.com/birbaner/chemi-mlops`
+
+**Tech Stack**:
+- RDKit for cheminformatics
+- scikit-learn for ML
+- SHAP for interpretability
+- Streamlit for UI
+- Docker for deployment
+- Hugging Face Spaces for hosting
+
+---
+
+## 🚨 Initial Deployment Issues
+
 ### 1. Symptom
-- Hugging Face Space status stuck at "Starting".
-- Container logs in the web UI returned the HTML frontend, but container stdout was not visible.
-- Space intermittently timed out during startup.
+- Hugging Face Space status stuck at "Starting"
+- Container logs in the web UI returned the HTML frontend instead of stdout
+- Space intermittently timed out during startup
+- App failed to respond to health probes
 
 ### 2. Root Causes
-- Heavy data-loading and model training executed at module import time in `app.py`, blocking Streamlit from responding to readiness probes.
-- Top-level import of the `tdc` package in `src/ingest/tdc_loader.py` (not listed in `requirements.txt` originally) caused inconsistent build/runtime behavior.
-- Streamlit bind address and Docker HEALTHCHECK probing mismatches prevented the Hugging Face frontend from detecting readiness.
 
-### 3. Fixes Applied
+#### a. Import-Time Heavy Operations
+- Data loading and model training executed at module import time in `app.py`
+- Blocked Streamlit from starting and responding to readiness probes
+- HF platform couldn't detect when app was ready
 
-#### a. Lazy Import and Dependency Fixes
-- Moved `from tdc.single_pred import ADME` inside the loader function in `src/ingest/tdc_loader.py` to avoid import-time failures.
-- Added `tdc` to `requirements.txt`.
+#### b. Missing Dependencies
+- Top-level import of `tdc` package in `src/ingest/tdc_loader.py`
+- Package not listed in `requirements.txt`
+- Caused inconsistent build/runtime behavior
 
-#### b. Avoid Long Work at Import Time
-- Deferred heavy tasks (data loading and model training) to runtime inside a `st.spinner(...)` in `app.py` so Streamlit can start quickly and health probes can succeed.
+#### c. Network Configuration Issues
+- Streamlit bind address and Docker HEALTHCHECK mismatches
+- App listening on localhost instead of `0.0.0.0`
+- HF frontend couldn't reach the app
 
-#### c. Docker / Streamlit Runtime Adjustments
-- Updated `Dockerfile` to bind Streamlit to `0.0.0.0` and use the `PORT` env var (fallback to `8501`).
-- Removed or avoided unstable custom HEALTHCHECKs that probed the wrong host/port.
+#### d. Invalid YAML Metadata
+- Duplicate and malformed YAML frontmatter blocks in README
+- `tags` field not properly formatted as array
+- Caused repo card validation failures
 
-#### d. Temporary Debug Logging
-- Added short startup logs and a `READY` marker to container logs for visibility during debugging. (Remove these when finished.)
+---
 
-### 4. Files Changed (High Level)
-- `app.py` — moved data loading and training into a runtime spinner.
-- `src/ingest/tdc_loader.py` — made `tdc` import lazy.
-- `requirements.txt` — added `tdc`.
-- `Dockerfile` — updated bind address, port usage, and removed debug HEALTHCHECK.
+## ✅ Solutions Implemented
 
-### 5. Validation Steps
-- Fetched container run logs using the Hugging Face iframe logs endpoint and browser DevTools.
-- Observed Streamlit startup messages and verified the app UI loaded and accepted input.
-- Confirmed the app no longer performed heavy startup work during import and that the Hugging Face frontend detected readiness.
+### 1. Lazy Import and Dependency Fixes
 
-### 6. Best Practices & Next Steps
-- Never perform expensive CPU/IO operations at import time in containerized apps.
-- Keep `requirements.txt` complete and optionally pin versions.
-- For explicit readiness probes, add a minimal HTTP endpoint that returns 200 only when ready; point Docker HEALTHCHECK to it.
-- Remove development debug logging and HEALTHCHECK workarounds once stable.
+**Problem**: Missing `tdc` dependency causing import failures
 
-### 7. Commit & Push Instructions
+**Solution**:
+```python
+# src/ingest/tdc_loader.py
+def load_lipophilicity():
+    from tdc.single_pred import ADME  # Lazy import
+    data = ADME(name="Lipophilicity_AstraZeneca")
+    return data.get_data()
+```
 
-```powershell
-git add README.md Dockerfile src/ingest/tdc_loader.py requirements.txt app.py
-git commit -m "docs: add end-to-end deployment notes and changelog"
+**Action**: Added `tdc` to `requirements.txt`
+
+### 2. Deferred Heavy Workloads
+
+**Problem**: Import-time model training blocking Streamlit startup
+
+**Solution**:
+```python
+# app.py
+with st.spinner("Loading data and training model..."):
+    df, fps = load_data_and_index()
+    model, interpreter, rmse, mae, r2 = train_model(df)
+```
+
+**Result**: Streamlit can start quickly and respond to health probes
+
+### 3. Docker Networking
+
+**Problem**: App not reachable from HF platform
+
+**Solution**:
+```dockerfile
+# Dockerfile
+CMD ["sh", "-c", "PORT=${PORT:-8501}; exec streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT ...]
+```
+
+**Key changes**:
+- Bind to `0.0.0.0` instead of `127.0.0.1`
+- Use `PORT` environment variable with fallback to `8501`
+- Enable proper CORS and XSRF settings for iframe embedding
+
+### 4. Clean YAML Frontmatter
+
+**Problem**: Repo card validation failures
+
+**Solution**:
+```yaml
+---
+title: Chemi Mlops Demo
+emoji: 🧪
+sdk: docker
+app_port: 8501
+app_file: app.py
+tags:
+  - streamlit
+  - cheminformatics
+---
+```
+
+**Result**: Single, properly formatted YAML block at top of README
+
+---
+
+## 🔧 Module Import Path Fixes
+
+**Problem**: `ModuleNotFoundError: No module named 'src'` when running scripts directly
+
+**Solution**: Added project root to `sys.path` in all entry point scripts:
+```python
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+```
+
+**Files updated**:
+- `src/clean/prepare_dataset.py`
+- `src/clean/add_descriptors.py`
+- `scripts/add_descriptors_cli.py`
+
+---
+
+## 🎨 Feature Additions
+
+### Phase 1: Molecular Descriptors (Cheminformatics)
+- Created `src/clean/add_descriptors.py` for RDKit descriptor calculation
+- Integrated into data preparation pipeline
+- Added standalone CLI: `scripts/add_descriptors_cli.py`
+
+**Descriptors computed**:
+- MolWt, LogP, TPSA, NumHDonors, NumHAcceptors, NumRotatableBonds, RingCount
+
+### Phase 2: Model Interpretability (ML/AI)
+- Created `src/interpretability/shap_explainer.py` with `ModelInterpreter` class
+- Integrated SHAP TreeExplainer for feature attribution
+- Added uncertainty quantification using RF ensemble predictions
+- Built interactive SHAP waterfall plots
+
+**Capabilities**:
+- Global feature importance visualization
+- Local SHAP explanations for individual predictions
+- 95% prediction intervals
+- Color-coded contribution tables
+
+---
+
+## 🐛 Bug Fixes
+
+### TypeError in SHAP Waterfall Plot
+**Error**: `TypeError: unsupported format string passed to numpy.ndarray.__format__`
+
+**Cause**: `base_value` from SHAP explainer was numpy array, not scalar
+
+**Fix**:
+```python
+base_value = float(self.explainer.expected_value)
+```
+
+---
+
+## 📊 Files Modified (Summary)
+
+### Core Application
+- `app.py` — Added SHAP integration, uncertainty quantification, enhanced UI
+- `requirements.txt` — Added `shap`, `matplotlib`
+
+### Data Pipeline
+- `src/clean/prepare_dataset.py` — Integrated descriptor calculation
+- `src/clean/add_descriptors.py` — New module for molecular descriptors
+- `scripts/add_descriptors_cli.py` — CLI wrapper
+
+### Interpretability
+- `src/interpretability/__init__.py` — Package init
+- `src/interpretability/shap_explainer.py` — SHAP-based model interpretation
+
+### Configuration
+- `README.md` — Complete rewrite with professional structure
+- `DEPLOYMENT_NOTES.md` — This document
+- `.gitignore` — Enhanced security patterns, allow processed data
+- `Dockerfile` — Network and port configuration
+
+---
+
+## ✅ Validation & Testing
+
+### Manual Testing
+1. Run locally: `streamlit run app.py`
+2. Test prediction with SMILES input (e.g., `CCO`, `c1ccccc1`)
+3. Verify SHAP explanations appear
+4. Check prediction intervals display correctly
+5. Test similarity search functionality
+
+### Deployment Validation
+1. Push to HF: `git push hf main`
+2. Monitor build logs in HF Space UI
+3. Wait for "Running" status
+4. Test all features in deployed app
+5. Check for console errors in browser DevTools
+
+---
+
+## 📈 Best Practices Applied
+
+1. **Never perform expensive I/O at import time** — Defer to runtime with spinners
+2. **Complete dependency management** — All packages in `requirements.txt`
+3. **Proper networking for containers** — Bind to `0.0.0.0`, use env vars
+4. **Clean configuration** — Valid YAML, no duplicates
+5. **Modular code structure** — Separate concerns (data, train, serve, interpret)
+6. **Error handling** — Graceful degradation, informative error messages
+7. **Security** — Comprehensive `.gitignore`, no secrets in repo
+8. **Documentation** — README for users, DEPLOYMENT_NOTES for developers
+
+---
+
+## 🔄 Git Workflow
+
+```bash
+# Stage changes
+git add <files>
+
+# Commit with conventional message
+git commit -m "feat: add feature X"
+
+# Push to GitHub
+git push origin main
+
+# Push to Hugging Face (triggers rebuild)
 git push hf main
 ```
 
 ---
 
-This document is derived from the deployment and debugging notes in the README. For further details, see the main README file.
+## 🚀 Future Considerations
+
+- Pin dependency versions for reproducibility
+- Add explicit health check endpoint (`/health`)
+- Implement logging with structured output
+- Add unit tests for core modules
+- Create CI/CD pipeline for automated testing
+- Monitor performance metrics (inference time, memory usage)
+
+---
+
+**Last Updated**: December 18, 2025  
+**Status**: ✅ Deployed and running successfully
