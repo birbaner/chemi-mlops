@@ -86,6 +86,22 @@ This section captures the investigation, root causes, and final fixes that resol
 - Updated `Dockerfile` to make Streamlit reachable by HF (bind address and PORT usage).
 - Temporary debug logging used while iterating; cleaned up in final commit.
 
+## Cheminformatics Extensions
+
+### Molecular Descriptor Calculation
+The project now includes automated molecular descriptor calculation using RDKit. The following descriptors are computed for each molecule:
+- **MolWt**: Molecular weight
+- **LogP**: Octanol-water partition coefficient
+- **NumHDonors**: Number of hydrogen bond donors
+- **NumHAcceptors**: Number of hydrogen bond acceptors
+- **TPSA**: Topological polar surface area
+
+**Usage:**
+1. Integrated into data pipeline: Run `python src/clean/prepare_dataset.py` to automatically enrich your dataset with descriptors.
+2. Standalone CLI: `python scripts/add_descriptors_cli.py input.csv output.csv`
+
+This extension demonstrates professional-grade cheminformatics capabilities suitable for computational drug discovery workflows.
+
 ## Best practices & next steps
 
 - Never perform expensive CPU/IO operations at import time in apps that run under container orchestration or platform health probes.

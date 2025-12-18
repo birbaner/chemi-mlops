@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from src.clean.standardize import canonicalize_smiles, smiles_to_inchikey
+from src.clean.add_descriptors import add_descriptors_to_csv
 
 
 def prepare_csv(in_csv: str, out_csv: str) -> None:
@@ -22,6 +23,13 @@ def prepare_csv(in_csv: str, out_csv: str) -> None:
 
     Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_csv, index=False)
+
+    # Enrich dataset with computed molecular descriptors (MolWt, LogP, H-bond counts, TPSA)
+    try:
+        add_descriptors_to_csv(out_csv, out_csv)
+        print("Descriptors added to dataset.")
+    except Exception as e:
+        print(f"Warning: failed to compute descriptors: {e}")
 
     print("Rows saved:", len(df))
     print("Saved to:", out_csv)
