@@ -14,7 +14,7 @@ tags:
   - machine-learning
   - interpretability
 pinned: false
-short_description: Lipophilicity prediction with SHAP interpretability and molecular similarity
+short_description: Lipophilicity prediction with SHAP and similarity
 ---
 
 # 🧪 ChemiMLOps Demo
