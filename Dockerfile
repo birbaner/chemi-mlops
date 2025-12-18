@@ -1,25 +1,20 @@
-FROM python:3.11-slim
-
-# System dependencies for RDKit
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libgl1 \
-    libxrender1 \
-    libxext6 \
-    libsm6 \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.13.5-slim
 
 WORKDIR /app
 
-# Copy project files
-COPY . /app
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+COPY requirements.txt ./
+COPY src/ ./src/
 
-# Hugging Face Spaces expects port 7860
-EXPOSE 7860
+RUN pip3 install -r requirements.txt
 
-# IMPORTANT: run Streamlit on the correct port
-CMD ["bash", "-lc", "streamlit run app.py --server.address 0.0.0.0 --server.port 7860 --server.headless true --browser.gatherUsageStats false"]
+EXPOSE 8501
+
+HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+
+ENTRYPOINT ["streamlit", "run", "src/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
