@@ -21,6 +21,27 @@ Lipophilicity prediction + top-K similarity search (RDKit + ML).
 
 This repository contains a Streamlit app and supporting code used to build a Docker-based Hugging Face Space. The sections below document the end-to-end debugging and fixes applied during deployment, and provide concise next steps and push instructions.
 
+## Features
+
+### 🧪 Molecular Descriptor Calculation
+Automated calculation of key molecular descriptors using RDKit:
+- **MolWt**: Molecular weight
+- **LogP**: Octanol-water partition coefficient (lipophilicity)
+- **TPSA**: Topological polar surface area
+- **NumHDonors/NumHAcceptors**: Hydrogen bond donors/acceptors
+- **NumRotatableBonds**: Rotatable bonds count
+- **RingCount**: Number of rings
+
+### 🤖 Model Interpretability & Explainability
+Professional-grade ML interpretability using SHAP (SHapley Additive exPlanations):
+- **Global Feature Importance**: Understand which molecular properties drive predictions across the entire dataset
+- **Local Explanations**: See which features contribute to individual predictions with SHAP values
+- **Uncertainty Quantification**: 95% prediction intervals using Random Forest ensemble predictions
+- **Interactive Visualization**: SHAP waterfall plots showing feature contribution breakdowns
+
+### 🔍 Molecular Similarity Search
+Fast similarity search using Morgan fingerprints and Tanimoto similarity for finding structurally related compounds.
+
 ## End-to-End: Space deployment, debugging and fixes
 
 This section captures the investigation, root causes, and final fixes that resolved a persistent "Starting" state in the HF Space UI.

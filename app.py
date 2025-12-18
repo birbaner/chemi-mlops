@@ -8,6 +8,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
+from src.interpretability.shap_explainer import ModelInterpreter
+
 
 DATA_PATH = "data/processed/lipophilicity_clean.csv"
 
@@ -68,7 +70,11 @@ def train_model(df: pd.DataFrame):
     rmse = float(mean_squared_error(y_test, preds) ** 0.5)
     mae = float(mean_absolute_error(y_test, preds))
     r2 = float(r2_score(y_test, preds))
-    return model, rmse, mae, r2
+    
+    # Create model interpreter
+    interpreter = ModelInterpreter(model, X_train)
+    
+    return model, interpreter, rmse, mae, r2
 
 
 st.set_page_config(page_title="ChemiMLOps Demo", layout="centered")
@@ -78,10 +84,19 @@ st.caption("Lipophilicity prediction + top-K similarity search (RDKit + ML).")
 # Load data and train model with spinners to avoid blocking import
 with st.spinner("Loading data and training model (this may take a minute)..."):
     df, fps = load_data_and_index()
-    model, rmse, mae, r2 = train_model(df)
+    model, interpreter, rmse, mae, r2 = train_model(df)
 
 with st.expander("Model metrics (baseline)", expanded=False):
     st.write(f"RMSE: **{rmse:.4f}** | MAE: **{mae:.4f}** | R²: **{r2:.4f}**")
+    
+    # Show global feature importance
+    st.subheader("Feature Importance")
+    importance = interpreter.get_feature_importance()
+    importance_df = pd.DataFrame(
+        list(importance.items()), 
+        columns=["Feature", "Importance"]
+    ).sort_values("Importance", ascending=False)
+    st.bar_chart(importance_df.set_index("Feature"))
 
 smiles = st.text_input("SMILES", value="c1ccccc1")
 k = st.slider("Top-K similar molecules", min_value=1, max_value=20, value=5)
@@ -95,7 +110,40 @@ with col1:
             st.error("Invalid SMILES. Example: CCO or c1ccccc1")
         else:
             pred = float(model.predict(X)[0])
+            
+            # Get prediction interval
+            lower, upper, std = interpreter.get_prediction_interval(X)
+            
             st.success(f"Predicted lipophilicity: **{pred:.4f}**")
+            st.info(f"95% Prediction interval: [{lower:.4f}, {upper:.4f}]")
+            st.caption(f"Uncertainty (std): {std:.4f}")
+            
+            # Show SHAP explanation
+            with st.expander("🔍 Model Explanation (SHAP)", expanded=True):
+                explanation = interpreter.explain_prediction(X)
+                
+                st.write("**Feature Contributions:**")
+                shap_df = pd.DataFrame(
+                    list(explanation["shap_values"].items()),
+                    columns=["Feature", "SHAP Value"]
+                ).sort_values("SHAP Value", key=abs, ascending=False)
+                
+                # Color positive/negative contributions
+                st.dataframe(
+                    shap_df.style.background_gradient(
+                        subset=["SHAP Value"], 
+                        cmap="RdBu_r",
+                        vmin=-0.5,
+                        vmax=0.5
+                    ),
+                    use_container_width=True
+                )
+                
+                st.caption(f"Base value (average prediction): {explanation['base_value']:.4f}")
+                
+                # Show waterfall plot
+                fig = interpreter.plot_shap_waterfall(X, explanation["shap_values"])
+                st.pyplot(fig)
 
 with col2:
     if st.button("Find Similar Molecules"):

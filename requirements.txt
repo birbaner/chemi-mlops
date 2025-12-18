@@ -6,3 +6,5 @@ joblib
 streamlit
 altair
 tdc
+shap
+matplotlib
