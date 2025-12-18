@@ -1,4 +1,3 @@
----
 title: Chemi Mlops Demo
 emoji: 🚀
 colorFrom: red
@@ -9,7 +8,6 @@ tags:
 pinned: false
 short_description: Streamlit template space
 
----
 title: Chemi Mlops Demo
 emoji: 🚀
 colorFrom: red
@@ -17,7 +15,19 @@ colorTo: red
 sdk: docker
 app_port: 8501
 tags:
-- streamlit
+pinned: false
+short_description: Streamlit template space
+
+# Chemi Mlops Demo
+
+---
+title: Chemi Mlops Demo
+emoji: 🚀
+colorFrom: red
+colorTo: red
+sdk: docker
+app_port: 8501
+tags: ["streamlit"]
 pinned: false
 short_description: Streamlit template space
 ---
